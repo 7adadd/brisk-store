@@ -55,7 +55,14 @@ function PosPage() {
         if (existing.qty + 1 > product.stock) { toast.error("الكمية تجاوزت المخزون"); return prev; }
         return prev.map((i) => i.productId === productId ? { ...i, qty: i.qty + 1 } : i);
       }
-      return [...prev, { productId, name: product.name, price: product.price, qty: 1 }];
+      return [...prev, {
+        productId,
+        name: product.name,
+        price: product.price,
+        cost: product.cost,
+        categoryId: product.categoryId,
+        qty: 1,
+      }];
     });
   };
 

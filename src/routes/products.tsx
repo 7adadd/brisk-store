@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Printer, Sliders, History, FolderPlus, FileSpreadsheet, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Printer, Sliders, History, FolderPlus, FileSpreadsheet, Download, Users as UsersIcon } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/products")({
