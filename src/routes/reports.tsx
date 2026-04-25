@@ -23,6 +23,7 @@ function ReportsPage() {
   const returns = useStore((s) => s.returns);
   const customers = useStore((s) => s.customers);
   const products = useStore((s) => s.products);
+  const categories = useStore((s) => s.categories);
   const [period, setPeriod] = useState<"day" | "week" | "month">("day");
   const [cashier, setCashier] = useState("all");
   const [payMethod, setPayMethod] = useState("all");
@@ -78,11 +79,12 @@ function ReportsPage() {
       <h1 className="text-2xl font-bold">التقارير والتحليلات</h1>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
           <TabsTrigger value="sales">تقارير المبيعات</TabsTrigger>
           <TabsTrigger value="payments">طرق الدفع والمرتجعات</TabsTrigger>
           <TabsTrigger value="customers">العملاء والديون</TabsTrigger>
+          <TabsTrigger value="partners">الأقسام والشركاء 🤝</TabsTrigger>
           <TabsTrigger value="endofday">إقفال اليوم</TabsTrigger>
         </TabsList>
 
@@ -255,6 +257,10 @@ function ReportsPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="partners" className="space-y-4">
+          <PartnersReport invoices={filtered} categories={categories} products={products} />
+        </TabsContent>
+
         <TabsContent value="endofday" className="space-y-4">
           <div className="rounded-lg border bg-card p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
@@ -311,6 +317,193 @@ function SummaryItem({ label, value, highlight }: { label: string; value: string
     <div className="rounded-md border p-3 text-center">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className={`mt-1 text-xl font-bold ${cls}`}>{value}</div>
+    </div>
+  );
+}
+
+import type { Invoice, Category, Product } from "@/lib/store";
+
+function PartnersReport({ invoices, categories, products }: { invoices: Invoice[]; categories: Category[]; products: Product[] }) {
+  // حساب أرباح كل قسم
+  const stats = useMemo(() => {
+    return categories.map((cat) => {
+      let revenue = 0;
+      let cost = 0;
+      let qty = 0;
+      const productSales = new Map<string, { name: string; qty: number; revenue: number; profit: number }>();
+
+      invoices.forEach((inv) => {
+        inv.items.forEach((it) => {
+          if (it.categoryId !== cat.id) return;
+          const itemRevenue = it.price * it.qty;
+          const itemCost = (it.cost || 0) * it.qty;
+          const itemProfit = itemRevenue - itemCost;
+          revenue += itemRevenue;
+          cost += itemCost;
+          qty += it.qty;
+
+          const existing = productSales.get(it.productId);
+          if (existing) {
+            existing.qty += it.qty;
+            existing.revenue += itemRevenue;
+            existing.profit += itemProfit;
+          } else {
+            productSales.set(it.productId, {
+              name: it.name,
+              qty: it.qty,
+              revenue: itemRevenue,
+              profit: itemProfit,
+            });
+          }
+        });
+      });
+
+      const profit = revenue - cost;
+      const storeShare = (profit * cat.storeShare) / 100;
+      const partnerShare = profit - storeShare;
+      const stockValue = products
+        .filter((p) => p.categoryId === cat.id)
+        .reduce((s, p) => s + p.cost * p.stock, 0);
+
+      return {
+        cat,
+        revenue,
+        cost,
+        profit,
+        qty,
+        storeShare,
+        partnerShare,
+        stockValue,
+        topProducts: Array.from(productSales.values()).sort((a, b) => b.profit - a.profit).slice(0, 5),
+      };
+    });
+  }, [invoices, categories, products]);
+
+  const totalRevenue = stats.reduce((s, x) => s + x.revenue, 0);
+  const totalProfit = stats.reduce((s, x) => s + x.profit, 0);
+  const totalStoreShare = stats.reduce((s, x) => s + x.storeShare, 0);
+  const totalPartnerShare = stats.reduce((s, x) => s + x.partnerShare, 0);
+
+  return (
+    <div className="space-y-4">
+      {/* الإجماليات */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="rounded-lg bg-gradient-to-br from-primary to-primary-glow p-4 text-primary-foreground shadow-md">
+          <div className="text-xs opacity-90">إجمالي المبيعات</div>
+          <div className="mt-1 text-2xl font-bold">{totalRevenue.toFixed(2)}</div>
+        </div>
+        <div className="rounded-lg bg-gradient-to-br from-success to-success p-4 text-primary-foreground shadow-md">
+          <div className="text-xs opacity-90">إجمالي الأرباح</div>
+          <div className="mt-1 text-2xl font-bold">{totalProfit.toFixed(2)}</div>
+        </div>
+        <div className="rounded-lg bg-gradient-to-br from-info to-info p-4 text-primary-foreground shadow-md">
+          <div className="text-xs opacity-90">حصة المتجر 🏪</div>
+          <div className="mt-1 text-2xl font-bold">{totalStoreShare.toFixed(2)}</div>
+        </div>
+        <div className="rounded-lg bg-gradient-to-br from-warning to-warning p-4 text-primary-foreground shadow-md">
+          <div className="text-xs opacity-90">حصة الشركاء 🤝</div>
+          <div className="mt-1 text-2xl font-bold">{totalPartnerShare.toFixed(2)}</div>
+        </div>
+      </div>
+
+      {/* تقرير لكل قسم */}
+      <div className="space-y-4">
+        {stats.map((s) => {
+          const isPartner = !!s.cat.partner;
+          const margin = s.revenue > 0 ? (s.profit / s.revenue) * 100 : 0;
+          return (
+            <div key={s.cat.id} className="rounded-lg border bg-card p-5 shadow-sm">
+              <div className="flex items-start justify-between flex-wrap gap-3 mb-4 pb-3 border-b">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-lg flex items-center justify-center text-2xl" style={{ background: (s.cat.color || "#888") + "20" }}>
+                    {isPartner ? "🤝" : "🏪"}
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">{s.cat.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {isPartner ? `شراكة مع: ${s.cat.partner} (${s.cat.storeShare}% / ${100 - s.cat.storeShare}%)` : "ملك للمتجر بالكامل"}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" className="gap-1" onClick={() => toast.success(`تم تصدير تقرير ${s.cat.name}`)}>
+                    <FileDown className="h-3 w-3" /> تصدير
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1" onClick={() => window.print()}>
+                    <Printer className="h-3 w-3" /> طباعة
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <Stat label="القطع المباعة" value={s.qty.toString()} />
+                <Stat label="الإيرادات" value={s.revenue.toFixed(2)} color="primary" />
+                <Stat label="التكلفة" value={s.cost.toFixed(2)} />
+                <Stat label="إجمالي الربح" value={s.profit.toFixed(2)} color="success" />
+                <Stat label="هامش الربح" value={`${margin.toFixed(1)}%`} />
+                <Stat label="قيمة المخزون" value={s.stockValue.toFixed(2)} />
+              </div>
+
+              {isPartner && s.profit > 0 && (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-md border-2 border-primary/30 bg-primary/5 p-3">
+                    <div className="text-xs text-muted-foreground">حصة المتجر ({s.cat.storeShare}%)</div>
+                    <div className="text-2xl font-bold text-primary mt-1">{s.storeShare.toFixed(2)}</div>
+                  </div>
+                  <div className="rounded-md border-2 border-warning/30 bg-warning/5 p-3">
+                    <div className="text-xs text-muted-foreground">حصة {s.cat.partner} ({100 - s.cat.storeShare}%)</div>
+                    <div className="text-2xl font-bold text-warning-foreground mt-1">{s.partnerShare.toFixed(2)}</div>
+                  </div>
+                </div>
+              )}
+
+              {s.topProducts.length > 0 && (
+                <div className="mt-4">
+                  <div className="text-sm font-bold mb-2">أفضل 5 منتجات</div>
+                  <div className="rounded-md border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-secondary text-xs">
+                        <tr>
+                          <th className="p-2 text-right">المنتج</th>
+                          <th className="p-2 text-right">الكمية</th>
+                          <th className="p-2 text-right">الإيرادات</th>
+                          <th className="p-2 text-right">الربح</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {s.topProducts.map((p, i) => (
+                          <tr key={i} className="border-t">
+                            <td className="p-2">{p.name}</td>
+                            <td className="p-2">{p.qty}</td>
+                            <td className="p-2 font-bold text-primary">{p.revenue.toFixed(2)}</td>
+                            <td className="p-2 font-bold text-success">{p.profit.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {s.qty === 0 && (
+                <div className="mt-4 text-center text-sm text-muted-foreground py-4">
+                  لا توجد مبيعات لهذا القسم في الفترة المحددة
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, color }: { label: string; value: string; color?: "primary" | "success" }) {
+  const cls = color === "primary" ? "text-primary" : color === "success" ? "text-success" : "text-foreground";
+  return (
+    <div className="rounded-md border p-2 text-center">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={`mt-1 text-base font-bold ${cls}`}>{value}</div>
     </div>
   );
 }

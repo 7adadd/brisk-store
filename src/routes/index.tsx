@@ -55,7 +55,14 @@ function PosPage() {
         if (existing.qty + 1 > product.stock) { toast.error("الكمية تجاوزت المخزون"); return prev; }
         return prev.map((i) => i.productId === productId ? { ...i, qty: i.qty + 1 } : i);
       }
-      return [...prev, { productId, name: product.name, price: product.price, qty: 1 }];
+      return [...prev, {
+        productId,
+        name: product.name,
+        price: product.price,
+        cost: product.cost,
+        categoryId: product.categoryId,
+        qty: 1,
+      }];
     });
   };
 
@@ -98,11 +105,10 @@ function PosPage() {
       cardAmount: cardAmt,
       total,
     });
-    toast.success(`تم إنشاء الفاتورة ${inv.number} ${settings.autoPrint ? "وإرسالها للطباعة" : ""}`);
+    toast.success(`تم إنشاء الفاتورة ${inv.number}`);
     setCart([]); setCustomerId("cu1"); setPaymentMethod("cash");
-    if (settings.autoPrint) {
-      setTimeout(() => window.print(), 100);
-    }
+    // طباعة الإيصال - الانتظار قليلاً حتى يتم تحديث الـ DOM
+    setTimeout(() => window.print(), 200);
   };
 
   const handlePay = () => {
