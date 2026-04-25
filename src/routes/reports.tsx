@@ -257,6 +257,10 @@ function ReportsPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="partners" className="space-y-4">
+          <PartnersReport invoices={filtered} categories={categories} products={products} />
+        </TabsContent>
+
         <TabsContent value="endofday" className="space-y-4">
           <div className="rounded-lg border bg-card p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
