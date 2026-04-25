@@ -1,7 +1,10 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts, useLocation } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useLocation, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import appCss from "../styles.css?url";
 import { AppHeader } from "@/components/AppHeader";
 import { Toaster } from "@/components/ui/sonner";
+import { PrintReceipt } from "@/components/PrintReceipt";
+import { useStore } from "@/lib/store";
 
 function NotFoundComponent() {
   return (
@@ -25,8 +28,8 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "نظام نقطة البيع - POS" },
-      { name: "description", content: "نظام نقطة بيع متكامل لإدارة المتجر والمنتجات والعملاء" },
+      { title: "بوتيك الأناقة - نظام نقطة البيع" },
+      { name: "description", content: "نظام نقطة بيع متكامل لمحلات الملابس - إدارة المنتجات والعملاء والشركاء" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
@@ -50,12 +53,43 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const loc = useLocation();
+  const navigate = useNavigate();
+  const isAuth = useStore((s) => s.isAuthenticated);
+  const lastInvoice = useStore((s) => s.lastInvoice);
+
+  // حراسة المسارات
+  useEffect(() => {
+    if (!isAuth && loc.pathname !== "/login") {
+      navigate({ to: "/login" });
+    }
+  }, [isAuth, loc.pathname, navigate]);
+
+  // إذا كان على صفحة الدخول، اعرض المحتوى مباشرة بدون header
+  if (loc.pathname === "/login") {
+    return (
+      <div className="min-h-screen bg-background">
+        <Outlet />
+        <Toaster position="top-center" richColors />
+      </div>
+    );
+  }
+
+  // إذا غير مصدّق، لا تعرض محتوى محمي
+  if (!isAuth) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main>
+      <main className="no-print-bg">
         <Outlet />
       </main>
+      {/* مكون الإيصال - مخفي إلا أثناء الطباعة */}
+      <div className="print-only">
+        <PrintReceipt invoice={lastInvoice} />
+      </div>
       <Toaster position="top-center" richColors />
     </div>
   );

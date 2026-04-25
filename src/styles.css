@@ -154,3 +154,44 @@
     color: var(--color-foreground);
   }
 }
+
+/* === Print Styles - إعدادات الطباعة === */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* إخفاء كل شيء عدا الإيصال */
+  body * {
+    visibility: hidden;
+  }
+  .print-only,
+  .print-only * {
+    visibility: visible;
+  }
+  .print-only {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    background: white;
+    color: black;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .receipt-print {
+    width: 80mm;
+    max-width: 80mm;
+    padding: 4mm;
+    margin: 0 auto;
+    font-family: 'Courier New', monospace;
+    color: black;
+    background: white;
+  }
+  @page {
+    margin: 0;
+    size: 80mm auto;
+  }
+}
+
