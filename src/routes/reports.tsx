@@ -23,6 +23,7 @@ function ReportsPage() {
   const returns = useStore((s) => s.returns);
   const customers = useStore((s) => s.customers);
   const products = useStore((s) => s.products);
+  const categories = useStore((s) => s.categories);
   const [period, setPeriod] = useState<"day" | "week" | "month">("day");
   const [cashier, setCashier] = useState("all");
   const [payMethod, setPayMethod] = useState("all");
@@ -78,11 +79,12 @@ function ReportsPage() {
       <h1 className="text-2xl font-bold">التقارير والتحليلات</h1>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
           <TabsTrigger value="sales">تقارير المبيعات</TabsTrigger>
           <TabsTrigger value="payments">طرق الدفع والمرتجعات</TabsTrigger>
           <TabsTrigger value="customers">العملاء والديون</TabsTrigger>
+          <TabsTrigger value="partners">الأقسام والشركاء 🤝</TabsTrigger>
           <TabsTrigger value="endofday">إقفال اليوم</TabsTrigger>
         </TabsList>
 
