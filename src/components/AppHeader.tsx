@@ -2,14 +2,14 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { ShoppingCart, Package, Users, BarChart3, UserCog, Settings as SettingsIcon, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+const navItems: Array<{ to: string; label: string; icon: typeof ShoppingCart; exact?: boolean }> = [
   { to: "/", label: "نقطة البيع", icon: ShoppingCart, exact: true },
   { to: "/products", label: "المنتجات", icon: Package },
   { to: "/customers", label: "العملاء", icon: Users },
   { to: "/reports", label: "التقارير", icon: BarChart3 },
   { to: "/users", label: "المستخدمين", icon: UserCog },
   { to: "/settings", label: "الإعدادات", icon: SettingsIcon },
-] as const;
+];
 
 export function AppHeader() {
   const loc = useLocation();
