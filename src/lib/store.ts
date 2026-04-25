@@ -447,7 +447,7 @@ export const useStore = create<State>()(
 
       clearLastInvoice: () => set({ lastInvoice: null }),
     }),
-    { name: "pos-storage", version: 2 }
+    { name: "pos-storage-v2" }
   )
 );
 
